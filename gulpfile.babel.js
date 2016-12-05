@@ -5,6 +5,8 @@ import babel from 'gulp-babel';
 import del from 'del';
 import eslint from 'gulp-eslint';
 import webpack from 'webpack-stream';
+import mocha from 'gulp-mocha';
+import flow from 'gulp-flowtype';
 import webpackConfig from './webpack.config.babel';
 
 const paths = {
@@ -17,6 +19,7 @@ const paths = {
   libDir: 'lib',
   distDir: 'dist',
   clientBundle: 'dist/client-bundle.js?(.map)',
+  allLibTests: 'lib/test/**/*.js',
 };
 
 // clean is a task that simply deletes our entire auto-generated lib folder
@@ -49,7 +52,7 @@ gulp.task('build', ['lint', 'clean'], () =>
 // We forward stdout to console.log() and return a potential
 // error using gulp.task's callback function.
 // Essentially, just basically running node lib.
-gulp.task('main', ['lint', 'clean'], () =>
+gulp.task('main', ['test'], () =>
   gulp.src(paths.clientEntryPoint)
     .pipe(webpack(webpackConfig))
     .pipe(gulp.dest(paths.distDir)),
@@ -70,7 +73,13 @@ gulp.task('lint', () =>
   ])
     .pipe(eslint())
     .pipe(eslint.format())
-    .pipe(eslint.failAfterError()),
+    .pipe(eslint.failAfterError())
+    .pipe(flow({ abort: true })),
+);
+
+gulp.task('test', ['build'], () =>
+  gulp.src(paths.allLibTests)
+    .pipe(mocha()),
 );
 
 // default is a special task that will be run if you simply call gulp from the CLI.
